@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Recipe Randomizer</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    form, .card { max-width: 720px; }
+    label { display:block; margin: 8px 0 4px; }
+    input, select { width: 100%; padding: 8px; }
+    button { margin-top: 12px; padding: 10px 14px; cursor: pointer; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card { margin-top: 24px; padding: 16px; border: 1px solid #ddd; border-radius: 12px; }
+    .badge { display:inline-block; padding:2px 8px; border:1px solid #999; border-radius:999px; font-size:12px; margin-right:6px; }
+    ul { padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Recipe Randomizer</h1>
+
+  <form id="f">
+    <div class="row">
+      <div>
+        <label>Meal type</label>
+        <select name="meal">
+          <option value="">Any</option>
+          <option>breakfast</option>
+          <option>lunch</option>
+          <option>dinner</option>
+          <option>snack</option>
+          <option>dessert</option>
+        </select>
+      </div>
+      <div>
+        <label>Max time (minutes)</label>
+        <input type="number" name="max_time" min="1" step="1" placeholder="e.g. 20"/>
+      </div>
+    </div>
+    <label>Include ingredients (comma-separated)</label>
+    <input type="text" name="include" placeholder="egg, tomato"/>
+    <label>Exclude ingredients (comma-separated)</label>
+    <input type="text" name="exclude" placeholder="peanut, garlic"/>
+
+    <button type="submit">🎲 Get Random Recipe</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const f = document.getElementById('f');
+    const out = document.getElementById('result');
+
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(f);
+      const params = new URLSearchParams(data);
+      const res = await fetch('/api/recipes/random?' + params.toString());
+      const json = await res.json();
+      if (!res.ok) {
+        out.innerHTML = '<div class="card"><strong>No recipe found</strong></div>';
+        return;
+      }
+      const r = json.recipe;
+      const ings = json.ingredients || [];
+      out.innerHTML = `
+        <div class="card">
+          <h2>${r.title}</h2>
+          <div>
+            <span class="badge">${r.mealType}</span>
+            <span class="badge">${r.cookTimeMinutes} min</span>
+            <span class="badge">#${r.id}</span>
+          </div>
+          ${r.description ? `<p>${r.description}</p>` : ''}
+          <h3>Ingredients</h3>
+          <ul>${ings.map(i => `<li><strong>${i.name}</strong>${i.quantity ? ' — ' + i.quantity : ''}</li>`).join('')}</ul>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>
